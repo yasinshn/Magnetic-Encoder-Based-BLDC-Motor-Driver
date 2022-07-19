@@ -40,14 +40,14 @@ char I2C_Oku(char);
 
 /*   KOMUTASYON
 
- * IR2130 entegresi giri?indeki pinleri invert edildi?i için normalde yaz?lan 0, 1 olarak yaz?ld? , 1 de 0 olarak
+ * Because of pins of IR2130 inverted signal inputs the signal have given are inverted.
  * 
  */
 void AH_BL(){
-    CCP1CON = 0; //PWM Kapal?
-    PORTB = 0XDF; // B LOW pini aktif
-    PSTRCON = 0X20; // PWM giri?i RB5'TE
-    CCP1CON = 0X0C; // PWM etkin
+    CCP1CON = 0; //PWM off
+    PORTB = 0XDF; // B LOW pin set active
+    PSTRCON = 0X20; // PWM input RB5 
+    CCP1CON = 0X0C; // PWM active
 }
 
 void AH_CL(){
@@ -58,7 +58,7 @@ void BH_CL(){
     // 0XEF ~= 0X10;
     PORTB = 0XEF;
     PSTRCON=0X10;
-    CCP1CON = 0X0C; //PWM etkin
+    CCP1CON = 0X0C; //PWM active
 }
 void BH_AL(){
     PORTB = 0XBF; // 0X40 RB6
@@ -67,8 +67,8 @@ void BH_AL(){
 void CH_AL(){
     CCP1CON = 0;
     PORTB=0XBF;
-    PSTRCON=0X08; // PWM ç?k??? RB3 te (CH pini)
-    CCP1CON = 0X0C; // PWM etkin
+    PSTRCON=0X08; // PWM output on RB3
+    CCP1CON = 0X0C; // PWM active
 }
 
 void CH_BL(){
@@ -79,6 +79,32 @@ void pwm_duty(uint16_t duty_cycle){
  CCP1CON = ((duty_cycle << 4) & 0x30) | 0x0C;
  CCPR1L  = duty_cycle >> 2;
 
+}
+
+void commutate(int step){
+    switch(step){
+        case 0:
+            AH_BL();
+            break;
+        case 1:
+            AH_CL();
+            break;
+        case 2:
+            BH_AL();
+            break;
+        case 3:
+            BH_CL();
+            break;
+        case 4:
+            CH_AL();
+            break;
+        case 5:
+            CH_BL();
+            break;
+            
+        default:
+            PORTB = 0XFF; // All Pins Set Low
+    }
 }
 
 void I2C_Init(const unsigned long baudRate) 
@@ -112,7 +138,7 @@ char I2C_Yaz(unsigned char veri){
 
 void I2C_Hazir(){
  while(!(SSPIF)) 
-     ; // I2C konfigürasyonu bitene kadar bekle
+     ; // I2C konfigÃ¼rasyonu bitene kadar bekle
     SSPIF = 0;
 }
 
@@ -156,25 +182,30 @@ void main(void) {
     I2C_Init(100);
     PORTB=0;
     TRISB=0;
-    CCP1CON=0X0C; //PWM modülü için tek ç?k?? konfigürasyon
+    CCP1CON=0X0C; //PWM modÃ¼lÃ¼ iÃ§in tek Ã§?k?? konfigÃ¼rasyon
     CCPR1L=0; // Duty cycle oran?n?n soldan 8 bitini 0 yap
    
    // PWM frekans? = Fosc/{[(PR2) + 1] * 4 * (TMR2 Prescaler De?eri)} = 9.77 kHz
     
    TMR2IF = 0;  // Timer2 interrupt bayra??n? s?f?rla
-   T2CON = 0x04;    // Timer2 modülünü aktif et, prescaler oran? = 1
+   T2CON = 0x04;    // Timer2 modÃ¼lÃ¼nÃ¼ aktif et, prescaler oran? = 1
    PR2   = 0xFF;    // PR2 de?eri= 255
+    
+   int step = 0; 
  
     while(1)
     {
-    
-    
+        readDeg();
+        step++;
+        step %= 6;
+        commutate(step);   
+        
     }
 }
 
-void dereceOku(){
+void readDeg(){
     I2C_Basla(0X36); //AS5600 enkoderinin I2C adresi
-    I2C_Yaz(0X0D); // gelen aç? de?erinin ilk 8 biti (7:0)
+    I2C_Yaz(0X0D); // gelen aÃ§? de?erinin ilk 8 biti (7:0)
         
 }
 
