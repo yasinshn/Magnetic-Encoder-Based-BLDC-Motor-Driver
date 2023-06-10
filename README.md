@@ -1,0 +1,1 @@
+# Magnetic-Encoder-Based-BLDC-Motor-Driver![WhatsApp Image 2023-06-11 at 00 20 15](https://github.com/yasinshn/Magnetic-Encoder-Based-BLDC-Motor-Driver/assets/60985286/146f3134-72f5-48da-b323-426da9437ea6)
